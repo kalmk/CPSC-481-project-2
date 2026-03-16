@@ -2,8 +2,14 @@ from probability4e import *
 import os
 from google import genai
 from google.genai import types
+from dotenv import load_dotenv
+import json
+
+
 
 T, F = True, False
+
+load_dotenv()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
@@ -90,9 +96,27 @@ class Diagnostics:
             """
         
         response = self.client.models.generate_content(
-            model="gemini-2.5-flash-lite",
-            contents="Return the word hello."
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema={
+                    "type": "object",
+                    "properties": {
+                        "disease": {
+                            "type": "string",
+                            "enum": ["TB", "Cancer", "Bronchitis"]
+                        },
+                        "probability": {
+                            "type": "number"
+                        }
+                    },
+                    "required": ["disease", "probability"]
+                }
+            )
         )
 
-
-        print(response.text)
+        data = json.loads(response.text)
+        disease = data["disease"]
+        probability = data["probability"]
+        return [disease, probability]
